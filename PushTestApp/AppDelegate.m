@@ -97,12 +97,12 @@
     
 }
 #pragma mark - RemotePush
-// 远程推送 回调
+// 远程推送 回调 在iOS10之后将会 分成三个方法回调
 - (void)application:(UIApplication *)application didReceiveRemoteNotification:(NSDictionary *)userInfo{
     
 }
 #pragma mark - LocalPush
-// 点击本地推送通知 进入APP后的回调
+// 点击本地推送通知 进入APP后的回调 在iOS10之后将会 分成两个方法回调
 - (void)application:(UIApplication *)application didReceiveLocalNotification:(UILocalNotification *)notification{
     [application cancelLocalNotification:notification];
 }
