@@ -7,8 +7,8 @@
 //
 
 #import "AppDelegate.h"
-
-@interface AppDelegate ()<UIAlertViewDelegate>
+#import <UserNotifications/UserNotifications.h> // ios10推送 需要导入以及遵守协议
+@interface AppDelegate ()<UIAlertViewDelegate,UNUserNotificationCenterDelegate>
 
 @end
 
@@ -67,8 +67,23 @@
     // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
 }
 - (void)registerAPN {
-    // 在此根据版本不同，设置不同的注册方式 以ios8为分界线
-    if([UIDevice currentDevice].systemVersion.integerValue >= 8.0){
+    // 在此根据版本不同，设置不同的注册方式 以ios8/10为分界线
+    if ([UIDevice currentDevice].systemVersion.floatValue >= 10.0) {
+        // 需要导入 <UserNotifications/UserNotifications.h>
+        UNUserNotificationCenter *notifiCenter = [UNUserNotificationCenter currentNotificationCenter];
+        notifiCenter.delegate = self;
+        [notifiCenter requestAuthorizationWithOptions:UNAuthorizationOptionAlert | UNAuthorizationOptionBadge | UNAuthorizationOptionSound completionHandler:^(BOOL granted, NSError * _Nullable error) {
+            if (granted) {
+                // 注册成功
+                [notifiCenter getNotificationSettingsWithCompletionHandler:^(UNNotificationSettings * _Nonnull settings) {
+                    NSLog(@"%@",settings);
+                }];
+            }else{
+                // 注册失败
+            }
+        }];
+    }else if([UIDevice currentDevice].systemVersion.floatValue >= 8.0){
+        // ios8 - ios10
         UIUserNotificationSettings *setting = [UIUserNotificationSettings settingsForTypes:UIUserNotificationTypeBadge | UIUserNotificationTypeSound | UIUserNotificationTypeAlert categories:nil];
         [[UIApplication sharedApplication] registerUserNotificationSettings:setting];
     }else{
@@ -82,7 +97,7 @@
     // 注册通知
     [application registerForRemoteNotifications];
 }
-// 注册成功的回调
+// 注册成功的回调 获取token
 - (void)application:(UIApplication *)application didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken{
     // 在此回调中获得deviceToken
     NSString *tokenString = [NSString stringWithFormat:@"%@",deviceToken];
@@ -97,13 +112,55 @@
     
 }
 #pragma mark - RemotePush
-// 远程推送 回调 在iOS10之后将会 分成三个方法回调
+// 远程推送 回调 在iOS10之后将会变更
 - (void)application:(UIApplication *)application didReceiveRemoteNotification:(NSDictionary *)userInfo{
     
 }
 #pragma mark - LocalPush
-// 点击本地推送通知 进入APP后的回调 在iOS10之后将会 分成两个方法回调
+// 点击本地推送通知 进入APP后的回调 在iOS10之后将会变更
 - (void)application:(UIApplication *)application didReceiveLocalNotification:(UILocalNotification *)notification{
     [application cancelLocalNotification:notification];
+}
+#pragma mark - UNUserNotificationCenterDelegate 
+// iOS10 推送回调
+- (void)userNotificationCenter:(UNUserNotificationCenter *)center willPresentNotification:(UNNotification *)notification withCompletionHandler:(void (^)(UNNotificationPresentationOptions options))completionHandler{
+    NSDictionary *userInfo = notification.request.content.userInfo;
+    UNNotificationRequest *request = notification.request; // 收到推送的请求
+    UNNotificationContent *content = request.content; //收到推送消息的全部内容
+    NSNumber *badge = content.badge; // 推送消息的角标
+    NSString *body = content.body; // 收到推送消息具体内容
+    UNNotificationSound *sound = content.sound; //声音
+    NSString *subTitle = content.subtitle; // 推送收到的副标题
+    NSString *title = content.title; // 推送收到的标题
+    
+    if ([notification.request.trigger isKindOfClass:[UNPushNotificationTrigger class]]) {
+        NSLog(@"iOS10 收到远程通知");
+    }else{
+        NSLog(@"ios10 收到本地通知%@%@%@%@%@",title,subTitle,body,badge,userInfo);
+    }
+    completionHandler(UNNotificationPresentationOptionBadge |
+                      UNNotificationPresentationOptionSound |
+                      UNNotificationPresentationOptionAlert );
+    // 需要执行此方法，选择是否提醒用户，有以上三种那个类型可选
+    
+}
+// 通知的点击事件
+- (void)userNotificationCenter:(UNUserNotificationCenter *)center didReceiveNotificationResponse:(UNNotificationResponse *)response withCompletionHandler:(void(^)())completionHandler{
+    NSDictionary *userInfo = response.notification.request.content.userInfo;
+    UNNotificationRequest *request = response.notification.request;
+    UNNotificationContent *content = request.content; //收到推送消息的全部内容
+    NSNumber *badge = content.badge; // 推送消息的角标
+    NSString *body = content.body; // 收到推送消息具体内容
+    UNNotificationSound *sound = content.sound; //声音
+    NSString *subTitle = content.subtitle; // 推送收到的副标题
+    NSString *title = content.title; // 推送收到的标题
+    NSLog(@">>>通知的点击事件");
+    if ([request.trigger isKindOfClass:[UNPushNotificationTrigger class]]) {
+        NSLog(@"iOS10 收到远程通知");
+    }else{
+        NSLog(@"ios10 收到本地通知%@%@%@%@%@",title,subTitle,body,badge,userInfo);
+    }
+    completionHandler(); //系统要求执行此方法
+    
 }
 @end

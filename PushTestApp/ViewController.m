@@ -7,6 +7,9 @@
 //
 
 #import "ViewController.h"
+#import <UserNotifications/UserNotifications.h>
+#import <CoreLocation/CoreLocation.h>
+#import<MobileCoreServices/MobileCoreServices.h>
 
 @interface ViewController ()
 
@@ -17,9 +20,13 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.view.backgroundColor = [UIColor grayColor];
-    [self creatLocalPush];
+    if ([UIDevice currentDevice].systemVersion.floatValue >= 10.0){
+        [self creatLocalPushIOS10];
+    }else{
+        [self creatLocalPush];
+    }
 }
-// 创建本地推送
+#pragma mark - 创建本地推送 ios10 之前
 - (void)creatLocalPush{
     UILocalNotification *localNotifi = [[UILocalNotification alloc]init];
     // 设置触发时间
@@ -64,6 +71,71 @@
     
     // 取消所有的本地推送
     [[UIApplication sharedApplication]  cancelAllLocalNotifications];
+    
+}
+#pragma mark - 创建本地推送 ios10之后
+- (void)creatLocalPushIOS10{
+    // 创建本地通知也需要在appdelegate中心进行注册
+    // 1.创建通知内容
+    UNMutableNotificationContent *content = [[UNMutableNotificationContent alloc] init];
+    content.title = @"本地通知标题";
+    content.subtitle = @"本地通知副标题";
+    content.body = @"本地通知内容";
+    content.badge = @1;
+    NSError *error = nil;
+    NSString *path = [[NSBundle mainBundle] pathForResource:@"imageName@2x" ofType:@"png"];
+    // 2.设置通知附件内容
+    NSMutableDictionary *optionsDict = [NSMutableDictionary dictionary];
+    // 一个包含描述文件的类型统一类型标识符（UTI）一个NSString。如果不提供该键，附件的文件扩展名来确定其类型，常用的类型标识符有 kUTTypeImage,kUTTypeJPEG2000,kUTTypeTIFF,kUTTypePICT,kUTTypeGIF ,kUTTypePNG,kUTTypeQuickTimeImage等。
+    
+    // 需要导入框架 #import<MobileCoreServices/MobileCoreServices.h>
+    optionsDict[UNNotificationAttachmentOptionsTypeHintKey] = (__bridge id _Nullable)(kUTTypeImage);
+    // 是否隐藏缩略图
+    optionsDict[UNNotificationAttachmentOptionsThumbnailHiddenKey] = @YES;
+    // 剪切缩略图
+    optionsDict[UNNotificationAttachmentOptionsThumbnailClippingRectKey] = (__bridge id _Nullable)((CGRectCreateDictionaryRepresentation(CGRectMake(0.25, 0.25, 0.5 ,0.5))));
+    // 如果附件是影片，则以第几秒作为缩略图
+    optionsDict[UNNotificationAttachmentOptionsThumbnailTimeKey] = @1;
+    // optionsDict如果不需要，可以不设置，直接传nil即可
+    UNNotificationAttachment *att = [UNNotificationAttachment attachmentWithIdentifier:@"identifier" URL:[NSURL fileURLWithPath:path] options:optionsDict error:&error];
+    if (error) {
+        NSLog(@"attachment error %@", error);
+    }
+    content.attachments = @[att];
+    content.launchImageName = @"imageName@2x";
+    // 2.设置声音
+    UNNotificationSound *sound = [UNNotificationSound defaultSound];
+    content.sound = sound;
+    // 3.触发模式 多久触发，是否重复
+     // 3.1 按秒
+    UNTimeIntervalNotificationTrigger *trigger = [UNTimeIntervalNotificationTrigger triggerWithTimeInterval:5 repeats:NO];
+     // 3.2 按日期
+//    // 周二早上 9：00 上班
+//    NSDateComponents *components = [[NSDateComponents alloc] init];
+//    // 注意，weekday是从周日开始的计数的
+//    components.weekday = 3;
+//    components.hour = 9;
+//    UNCalendarNotificationTrigger *trigger = [UNCalendarNotificationTrigger triggerWithDateMatchingComponents:components repeats:YES];
+    // 3.3 按地理位置
+    // 一到某个经纬度就通知，判断包含某一点么
+    // 不建议使用！！！！！！CLRegion *region = [[CLRegion alloc] init];
+    
+//    CLCircularRegion *circlarRegin = [[CLCircularRegion alloc] init];
+//    // 经纬度
+//    CLLocationDegrees latitudeDegrees = 123.00; // 维度
+//    CLLocationDegrees longitudeDegrees = 123.00; // 经度
+//
+//    [circlarRegin containsCoordinate:CLLocationCoordinate2DMake(latitudeDegrees, longitudeDegrees)];
+//    UNLocationNotificationTrigger *trigger = [UNLocationNotificationTrigger triggerWithRegion:circlarRegin repeats:NO];
+
+    
+    // 4.设置UNNotificationRequest
+    NSString *requestIdentifer = @"TestRequest";
+    UNNotificationRequest *request = [UNNotificationRequest requestWithIdentifier:requestIdentifer content:content trigger:trigger];
+    
+    //5.把通知加到UNUserNotificationCenter, 到指定触发点会被触发
+    [[UNUserNotificationCenter currentNotificationCenter] addNotificationRequest:request withCompletionHandler:^(NSError * _Nullable error) {
+    }];
     
 }
 

@@ -4,10 +4,20 @@
 <dict>
 	<key>SchemeUserState</key>
 	<dict>
+		<key>Notification.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>2</integer>
+		</dict>
 		<key>PushTestApp.xcscheme</key>
 		<dict>
 			<key>orderHint</key>
 			<integer>0</integer>
+		</dict>
+		<key>pushService.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>1</integer>
 		</dict>
 	</dict>
 	<key>SuppressBuildableAutocreation</key>
@@ -23,6 +33,16 @@
 			<true/>
 		</dict>
 		<key>746801C31F3B43A3008033AA</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>746C4F5F1F3D92E300C72C01</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>746C4F701F3EEC2800C72C01</key>
 		<dict>
 			<key>primary</key>
 			<true/>
